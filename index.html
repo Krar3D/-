@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ضربات الجزاء - اقتصاديات النقود والبنوك</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+
+        :root {
+            --team-color: #00aaff;
+            --team-glow: rgba(0, 200, 255, 0.3);
+            --text-on-team: #ffffff;
+            --net-color: rgba(255,255,255,0.2);
+            --goal-border: #ffffff;
+            --pitch-color-1: #1a662c;
+            --pitch-color-2: #165624;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            background: linear-gradient(to bottom, #06111f 0%, #0a2342 40%, var(--pitch-color-1) 40%, var(--pitch-color-2) 100%);
+            color: white; font-family: 'Tajawal', sans-serif;
+            overflow: hidden; overscroll-behavior: none; touch-action: none;
+        }
+
+        /* تأثير اهتزاز الشاشة للعارضة */
+        .shake-screen { animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(5px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-10px, 0, 0); }
+            40%, 60% { transform: translate3d(10px, 0, 0); }
+        }
+
+        /* تصميم البطاقات المرفوعة */
+        .card-overlay {
+            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+            width: 120px; height: 170px; border-radius: 12px; z-index: 2000; pointer-events: none;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+            font-size: 4rem; opacity: 0; transition: all 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+        }
+        .card-overlay.show-card { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        .bg-yellow { background: linear-gradient(135deg, #ffd700, #ffb300); border: 3px solid #ffcc00; }
+        .bg-red { background: linear-gradient(135deg, #ff3232, #d50000); border: 3px solid #cc0000; }
+
+        /* ------------------ بيئة الملعب (Stadium) ------------------ */
+        .stadium {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            perspective: 800px;
+        }
+
+        .pitch-lines {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) rotateX(60deg);
+            width: 300px; height: 400px; border: 3px solid rgba(255,255,255,0.6);
+            border-bottom: none; border-radius: 10px 10px 0 0; z-index: 1; pointer-events: none;
+        }
+        .penalty-arc {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            width: 100px; height: 50px; border: 3px solid rgba(255,255,255,0.6);
+            border-bottom: none; border-radius: 50px 50px 0 0;
+        }
+
+        .goal-post {
+            position: absolute; bottom: 35%; left: 50%; transform: translateX(-50%);
+            width: 250px; height: 120px;
+            border-top: 8px solid var(--goal-border); 
+            border-left: 8px solid var(--goal-border); 
+            border-right: 8px solid var(--goal-border);
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, var(--net-color) 10px, var(--net-color) 12px),
+                        repeating-linear-gradient(-45deg, transparent, transparent 10px, var(--net-color) 10px, var(--net-color) 12px);
+            z-index: 2; box-shadow: inset 0 20px 50px rgba(0,0,0,0.5);
+            transition: all 0.5s;
+        }
+
+        .goalkeeper {
+            position: absolute; bottom: 38%; left: 50%; transform: translateX(-50%);
+            font-size: 4.5rem; z-index: 3; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            animation: gkIdle 2s infinite alternate ease-in-out;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.4));
+        }
+        @keyframes gkIdle { 0% { margin-left: -20px; } 100% { margin-left: 20px; } }
+        
+        .gk-dive-left { animation: none !important; transform: translateX(-120px) rotate(-45deg) scale(1.1); bottom: 40%; }
+        .gk-dive-right { animation: none !important; transform: translateX(80px) rotate(45deg) scale(1.1); bottom: 40%; }
+        .gk-save { animation: none !important; transform: translateX(-50%) scale(1.3); bottom: 42%; }
+
+        .ball {
+            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);
+            font-size: 3rem; z-index: 10; transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.6));
+        }
+
+        /* تأثير الطوبة النارية */
+        .ball.fireball {
+            filter: drop-shadow(0 0 15px #ff4500) drop-shadow(0 0 30px #ff0000);
+            transition: all 0.25s cubic-bezier(0.17, 0.89, 0.32, 1.28) !important;
+            animation: fireShake 0.2s infinite;
+        }
+        @keyframes fireShake {
+            0% { transform: translateX(-50%) scale(1) rotate(0deg); }
+            50% { transform: translateX(-50%) scale(1.05) rotate(5deg); }
+            100% { transform: translateX(-50%) scale(1) rotate(-5deg); }
+        }
+
+        .kick-goal-left { bottom: 45%; transform: translateX(-100px) scale(0.4) rotate(720deg) !important; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        .kick-goal-right { bottom: 45%; transform: translateX(50px) scale(0.4) rotate(720deg) !important; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        .kick-miss { bottom: 40%; transform: translateX(-50%) scale(0.6) rotate(360deg) !important; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        
+        .kick-crossbar { bottom: 58% !important; transform: translateX(-80px) scale(0.35) rotate(1000deg) !important; filter: drop-shadow(0 15px 5px rgba(0,0,0,0.5)); }
+
+        .goal-text {
+            position: absolute; top: 20%; left: 50%; transform: translate(-50%, 20px) scale(0);
+            font-size: 4rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px #ff3232, 0 0 40px #ff9d00;
+            z-index: 20; opacity: 0; transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+        }
+        .goal-text.show { transform: translate(-50%, 0) scale(1); opacity: 1; }
+
+        /* ------------------ الواجهة العلوية (HUD) ------------------ */
+        .top-hud {
+            position: fixed; top: 35px; left: 15px; right: 15px;
+            display: flex; justify-content: space-between; z-index: 1000; pointer-events: none;
+        }
+        .streak-hud {
+            background: linear-gradient(45deg, #ff4500, #ff8c00); color: white;
+            padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;
+            box-shadow: 0 3px 10px rgba(255, 69, 0, 0.4); display: none;
+            border: 1px solid #fffacd; animation: popIn 0.4s ease-out;
+        }
+        .highscore-hud {
+            background: rgba(255, 215, 0, 0.15); color: #ffd700;
+            padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;
+            border: 1px solid rgba(255, 215, 0, 0.5); box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+        }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* ------------------ واجهة المستخدم (UI) ------------------ */
+        .ui-layer {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 100;
+            background: rgba(15, 20, 35, 0.98); border-top: 2px solid var(--team-glow);
+            padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            border-radius: 25px 25px 0 0; width: 100%; max-width: 600px; text-align: center;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+            max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+            transition: border-color 0.5s;
+        }
+
+        #team-screen h2 { color: #fff; margin-bottom: 20px; font-size: 1.5rem; }
+        #quiz-content { display: none; }
+
+        .ui-layer::-webkit-scrollbar { width: 5px; } .ui-layer::-webkit-scrollbar-thumb { background: var(--team-color); border-radius: 5px; }
+
+        .top-tools { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .q-counter { font-size: 0.95rem; color: var(--text-on-team); font-weight: bold; margin: 0; background: var(--team-color); padding: 4px 15px; border-radius: 12px; transition: all 0.5s; }
+
+        .timer-container { width: 100%; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 15px; }
+        .timer-bar { height: 100%; width: 100%; background: var(--team-color); transition: width 1s linear, background 0.5s; }
+        .timer-warning { background: #ff3232 !important; }
+
+        h2 { margin: 0 0 15px 0; color: #fff; font-size: 1.1rem; line-height: 1.5; }
+        
+        .options { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        button.opt-btn { background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--team-glow); padding: 12px 10px; border-radius: 12px; font-size: 0.95rem; font-family: 'Tajawal', sans-serif; cursor: pointer; transition: all 0.2s; text-align: center; font-weight: bold;}
+        button.opt-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        button.opt-btn:disabled { opacity: 0.9; cursor: default; }
+        
+        .team-btn { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.1rem; padding: 15px; border-width: 2px; }
+
+        .speech-bubble { background: white; color: black; padding: 6px 12px; border-radius: 12px; font-size: 1rem; font-weight: 900; margin-bottom: 15px; display: none; opacity: 0; transition: opacity 0.3s; }
+
+        #explanation-box { display: none; margin-top: 15px; background: rgba(0, 0, 0, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); animation: fadeIn 0.4s; text-align: center; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        #explanation-box h3 { margin: 0 0 10px 0; font-size: 1.1rem; }
+        #explanation-box p { margin: 0 0 15px 0; font-size: 0.95rem; line-height: 1.6; color: #e2e8f0; }
+
+        #next-btn { background: var(--team-color); color: var(--text-on-team); font-weight: 900; width: 100%; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; transition: all 0.5s; text-shadow: 0 1px 2px rgba(0,0,0,0.3);}
+
+        #completion-screen { display: none; animation: fadeIn 0.8s; }
+        .trophy { font-size: 4rem; margin: 0; filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));}
+        .score-text { font-size: 2.5rem; margin: 10px 0; font-weight: 900; }
+        #final-desc { font-size: 1rem; color: #aaa; margin-bottom: 20px; line-height: 1.5; }
+        
+        .action-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .action-btns button { flex: 1; border: none; font-weight: bold; padding: 14px; border-radius: 10px; cursor: pointer; font-size: 1rem;}
+        .btn-restart { background: #fff; color: #000;}
+        .btn-review { background: var(--team-color); color: var(--text-on-team) !important;}
+
+        #review-screen { display: none; text-align: right; }
+        .review-item { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .review-q { font-weight: bold; color: #fff; margin-bottom: 10px; font-size: 1rem; line-height: 1.4; }
+        .review-ans { font-size: 0.95rem; margin-bottom: 8px; }
+        .review-ans span { font-weight: bold; padding: 3px 8px; border-radius: 5px; }
+        .ans-correct { background: rgba(0, 255, 150, 0.2); color: #00ff9d; }
+        .ans-wrong { background: rgba(255, 50, 50, 0.2); color: #ff3232; }
+        .review-exp { font-size: 0.9rem; color: #aaa; margin-top: 10px; border-top: 1px dashed #444; padding-top: 10px; }
+        .close-review-btn { width: 100%; background: #ef4444; color: white; border: none; font-weight: bold; margin-top: 10px; padding: 15px; border-radius: 10px; cursor: pointer; font-size: 1.1rem;}
+
+        .confetti { position: fixed; width: 10px; height: 10px; background-color: #f00; z-index: 9999; animation: fall 3s linear forwards; pointer-events: none; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- بطاقة الحكم -->
+    <div class="card-overlay" id="ref-card"></div>
+
+    <div class="top-hud">
+        <div class="highscore-hud" id="highscore-badge">🏆 أعلى نقاط: 0</div>
+        <div class="streak-hud" id="streak-badge">🔥 طوبة نارية (x2)</div>
+    </div>
+
+    <!-- الملعب -->
+    <div class="stadium" id="stadium">
+        <div class="goal-text" id="goal-text">GOAAAL! ⚽</div>
+        <div class="goal-post"></div>
+        <div class="goalkeeper" id="gk">🧤</div>
+        <div class="pitch-lines">
+            <div class="penalty-arc"></div>
+        </div>
+        <div class="ball" id="ball">⚽</div>
+    </div>
+
+    <!-- واجهة المستخدم -->
+    <div class="ui-layer" id="ui-container">
+        
+        <!-- شاشة اختيار الفريق -->
+        <div id="team-screen">
+            <h2>اختار فريقك المفضل ⚽</h2>
+            <div class="options">
+                <button class="opt-btn team-btn" onclick="selectTeam('barca')" style="border-color: #a50044; background: rgba(165,0,68,0.1);">🔴🔵 برشلونة</button>
+                <button class="opt-btn team-btn" onclick="selectTeam('real')" style="border-color: #ffffff; background: rgba(255,255,255,0.05);">⚪ ريال مدريد</button>
+                <button class="opt-btn team-btn" onclick="selectTeam('liverpool')" style="border-color: #c8102E; background: rgba(200,16,46,0.1);">🔴 ليفربول</button>
+            </div>
+        </div>
+
+        <div id="quiz-content">
+            <div class="top-tools">
+                <div class="q-counter" id="q-counter">الضربة 1 من 20</div>
+            </div>
+            
+            <div class="timer-container">
+                <div class="timer-bar" id="timer-bar"></div>
+            </div>
+
+            <h2 id="question-text">جاري التحميل...</h2>
+            
+            <div class="speech-bubble" id="speech-bubble"></div>
+
+            <div class="options" id="options-container"></div>
+            
+            <div id="explanation-box">
+                <h3 id="result-title"></h3>
+                <p id="explanation-text"></p>
+                <button id="next-btn" onclick="moveToNext()">الضربة القادمة ⚽</button>
+            </div>
+        </div>
+        
+        <div id="completion-screen">
+            <div class="trophy" id="final-trophy">🏆</div>
+            <h2 id="final-praise">جاري الحساب...</h2>
+            <p id="final-desc">جاري التقييم...</p>
+            
+            <div class="score-text" id="final-score">النقاط: 0</div>
+            
+            <div class="action-btns">
+                <button class="btn-review" onclick="showReview()">مراجعة 📋</button>
+                <button class="btn-restart" onclick="location.reload()">تغيير الفريق 🔄</button>
+            </div>
+        </div>
+
+        <div id="review-screen">
+            <h2 style="text-align: center; color: #fff; margin-top: 0;">تفاصيل التسديدات</h2>
+            <div id="review-list"></div>
+            <button class="close-review-btn" onclick="location.reload()">إنهاء المباراة</button>
+        </div>
+    </div>
+
+    <script>
+        // ----------------- نظام الأصوات والاهتزاز -----------------
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); 
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') { 
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.2); 
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+            } else if (type === 'wrong' || type === 'card') { 
+                osc.type = 'triangle'; 
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.4); 
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'crossbar') { 
+                osc.type = 'square'; 
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2); 
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') { 
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        function triggerVibration(type) {
+            if (!navigator.vibrate) return;
+            if (type === 'click') navigator.vibrate(30); 
+            else if (type === 'correct') navigator.vibrate([100, 50, 100]); 
+            else if (type === 'wrong') navigator.vibrate(200); 
+            else if (type === 'crossbar' || type === 'redcard') navigator.vibrate([300, 50, 300]); 
+        }
+
+        function showRefCard(type) {
+            const cardObj = document.getElementById('ref-card');
+            cardObj.className = 'card-overlay show-card ' + (type === 'yellow' ? 'bg-yellow' : 'bg-red');
+            cardObj.innerText = type === 'yellow' ? '🟨' : '🟥';
+            playSound('card');
+            setTimeout(() => { cardObj.classList.remove('show-card'); }, 2000);
+        }
+
+        // الأسئلة الـ 20 الخاصة باقتصاديات النقود والبنوك 
+        let quizData = [
+            { q: '1. عملية تبادل سلع مقابل سلع أخرى أو خدمات مقابل خدمات دون تدخل أداة وسيطة كالنقود، تُعرف بـ:', options: ['أ) قاعدة الذهب', 'ب) المقايضة (اقتصاد المبادلة)', 'ج) قانون جريشم', 'د) التضخم'], correct: 1, explanation: "المقايضة هي نظام اقتصادي يعتمد على المبادلة المباشرة دون استخدام النقود كوسيط." },
+            { q: '2. من سلبيات اقتصاد المبادلة التي تتعلق بصعوبة إيجاد شخصين يرغب كل منهما بما يمتلكه الآخر في نفس الوقت لكي تتم الصفقة:', options: ['أ) وجود تكاليف نظير التخزين', 'ب) صعوبة تجزئة السلع والخدمات', 'ج) احتمال عدم توافق الرغبات', 'د) احتمال تلف وتناقص قيم السلع'], correct: 2, explanation: "لإتمام صفقة المقايضة، يجب أن تتوافق رغبة الطرف الأول مع ما يمتلكه الطرف الثاني والعكس صحيح." },
+            { q: '3. المشكلة التي تبرز عندما تفقد بعض السلع المخصصة للمبادلة جودتها أو تتعرض للضرر بمرور الزمن هي:', options: ['أ) احتمال تلف وتناقص قيم السلع', 'ب) صعوبة تجزئة السلع', 'ج) الحاجة إلى معلومات عن الأثمان', 'د) عدم توافق الرغبات'], correct: 0, explanation: "الكثير من السلع (خاصة الزراعية) تتلف أو تفقد قيمتها بمرور الزمن." },
+            { q: '4. الاحتفاظ بالسلع لغرض مبادلتها في المستقبل يتطلب توفير أماكن للحفظ والحماية، مما يولد مشكلة تُعرف بـ:', options: ['أ) تناقص قيم السلع', 'ب) وجود تكاليف نظير تخزين السلع', 'ج) صعوبة التجزئة', 'د) نقص المعلومات عن أثمان السلع'], correct: 1, explanation: "تخزين السلع يتطلب أماكن وحماية مما يولد تكاليف إضافية على صاحبها." },
+            { q: '5. عندما لا يمكن تقسيم سلعة معينة إلى أجزاء أصغر لإتمام صفقة أقل قيمة دون أن تفقد السلعة منفعتها، فهذه مشكلة:', options: ['أ) صعوبة تجزئة السلع والخدمات', 'ب) عدم توافق الرغبات', 'ج) تكاليف التخزين', 'د) الحاجة إلى معلومات وبيانات'], correct: 0, explanation: "بعض السلع لا يمكن تجزئتها دون أن تفقد منفعتها أو قيمتها الأساسية." },
+            { q: '6. قبل ابتكار النقود، ما هو "السبيل" الذي كان يضطر الإنسان لاتباعه للحصول على ما يحتاجه من سلع وخدمات؟', options: ['أ) الاستدانة والمطالبة بالذهب', 'ب) إنتاج سلع وتوفير خدمات للآخرين لمبادلتها', 'ج) إصدار عملات ورقية محلية', 'د) الاعتماد على العملات الأجنبية'], correct: 1, explanation: "كان الإنسان يضطر لإنتاج السلع والخدمات ليتبادلها مع الآخرين لتلبية احتياجاته." },
+            { q: '7. المشكلة التي تعني صعوبة تحديد "نسبة التبادل" بين سلعة معينة وجميع السلع الأخرى المتوفرة في السوق ضمن نظام المقايضة هي:', options: ['أ) احتمال عدم توافق الرغبات', 'ب) صعوبة تجزئة السلع والخدمات', 'ج) الحاجة إلى معلومات وبيانات عن أثمان السلع', 'د) تكاليف التخزين'], correct: 2, explanation: "في غياب النقود، يصبح من الصعب جداً معرفة قيمة السلعة مقارنة بكل السلع الأخرى في السوق." },
+            { q: '8. تختلف النقود المستخدمة حالياً عن النقود السلعية قديماً (كالذهب والماشية) في أن:', options: ['أ) النقود الحالية قيمتها كسلعة أكبر من قيمتها النقدية', 'ب) النقود الحالية قيمتها النقدية أكبر بكثير من قيمتها كسلعة', 'ج) النقود الحالية ليس لها قيمة نهائياً', 'د) النقود الحالية تُستخدم في المقايضة فقط'], correct: 1, explanation: "العملة الورقية الحالية قيمتها كأداة تبادل أعلى بكثير من قيمة الورق المطبوعة عليه كسلعة." },
+            { q: '9. حسب النص، ما هو العامل الأساسي الذي يمنح "النقود الورقية المستخدمة حالياً" أهميتها وقيمتها التبادلية؟', options: ['أ) استخدامها في صناعة الحلي والزينة', 'ب) قبول الناس لها وتعهد الحكومة بتحويلها', 'ج) وزنها ونوع الحبر المستخدم فيها', 'د) ارتباطها الوثيق بالمقايضة الزراعية'], correct: 1, explanation: "النقود الحالية تستمد قوتها وقيمتها من قبول المجتمع لها ومن التزام الحكومة بها." },
+            { q: '10. النظام الذي قامت فيه البنوك المركزية والحكومات بتحديد قيمة كل عملة مقابل كمية محددة من الذهب يُسمى:', options: ['أ) قانون جريشم', 'ب) اقتصاد المبادلة', 'ج) قاعدة الذهب', 'د) النقود الورقية'], correct: 2, explanation: "قاعدة الذهب هي نظام نقدي يربط قيمة العملة الوطنية بكمية محددة من الذهب." },
+            { q: '11. في ظل نظام قاعدة الذهب، ما الذي يحدد "سعر صرف العملات المختلفة" مقابل بعضها البعض؟', options: ['أ) قانون جريشم', 'ب) رغبات الأفراد في السوق الموازي', 'ج) كمية الذهب المحددة لكل عملة', 'د) كمية السلع الزراعية في البلد'], correct: 2, explanation: "الذهب أصبح العامل المشترك الذي يحدد قيمة العملات وعلاقتها ببعضها." },
+            { q: '12. واحدة من الخصائص التالية ليست من شروط وقواعد اتباع الدولة لقاعدة الذهب:', options: ['أ) وجوب تحديد قيمة العملة بمقدار محدد من الذهب', 'ب) ضرورة مواكبة عرض النقود لكمية الذهب', 'ج) منع الأفراد تماماً من استبدال عملاتهم بالذهب', 'د) استعداد الحكومة لاستبدال العملة بالذهب دون قيود'], correct: 2, explanation: "من أهم خصائص قاعدة الذهب استعداد الحكومة لاستبدال العملة المحلية بالذهب للأفراد دون قيود، وليس منعهم." },
+            { q: '13. للحفاظ على الاستقرار في قيم المبادلات التجارية وتجنب التغيرات في أسعار العملات في ظل قاعدة الذهب، يجب أن يكون عرض النقود المحلي:', options: ['أ) أكبر بكثير من احتياطي الذهب', 'ب) مستقلاً تماماً عن كمية الذهب', 'ج) مواكباً لكمية الذهب المتوفرة بالبلاد', 'د) أقل من كمية الذهب بنسبة 50%'], correct: 2, explanation: "يجب أن يتناسب العرض النقدي مع كمية الذهب المتوفرة كغطاء للحفاظ على استقرار الأسعار." },
+            { q: '14. ينص "قانون جريشم" (Gresham\'s Law) بصيغته الشهيرة على أن:', options: ['أ) النقود الجيدة تدفع النقود السيئة خارج التداول', 'ب) النقود السيئة تدفع النقود الجيدة خارج التداول', 'ج) كمية النقود يجب أن تفوق كمية الذهب باستمرار', 'د) المقايضة أفضل من استخدام العملات المعدنية'], correct: 1, explanation: "الناس يميلون للاحتفاظ بالنقود ذات القيمة الحقيقية العالية (الجيدة) وإنفاق النقود الأقل قيمة (السيئة) في التداول." },
+            { q: '15. إذا تواجدت عملتان لهما نفس القيمة الرسمية، لكن إحداهما تحتوي على ذهب أكثر وارتفع سعر الذهب، فماذا سيفعل الجمهور؟', options: ['أ) يستخدمون العملة الذهبية في التبادل اليومي', 'ب) يكتنزون العملة الذهبية ويستخدمون العملة الأقل قيمة في التبادل', 'ج) يكتنزون العملتين ويرفضون التعامل بهما', 'د) يتجهون للمقايضة ويهملون العملتين'], correct: 1, explanation: "حسب قانون جريشم، سيحتفظ الناس بالعملة الذهبية (لأن قيمتها المعدنية زادت) ويتخلصون من العملة الأقل قيمة." },
+            { q: '16. وفقاً لمثال قانون جريشم، إذا ارتفع سعر الذهب، فإن الجمهور سيدفع "العملة الرسمية" للتداول، بينما سيقوم بـما يلي تجاه "العملة الذهبية":', options: ['أ) التخلص منها بسرعة', 'ب) إعطائها للحكومة دون مقابل', 'ج) الاحتفاظ بها وإذابتها للحصول على المعدن', 'د) استخدامها في شراء السلع الرخيصة فقط'], correct: 2, explanation: "يتم سحب العملة الذهبية من التداول للاحتفاظ بها أو إذابتها للاستفادة من قيمة الذهب المرتفعة." },
+            { q: '17. في الدول التي تعاني من التضخم وتناقص قيمة عملتها المحلية باستمرار، يميل الأفراد غالباً إلى:', options: ['أ) الاحتفاظ بالنقد المحلي واعتباره مخزناً آمناً للقيمة', 'ب) التخلص من النقد المحلي بسرعة واستبداله بنقد أجنبي قوي', 'ج) التوقف عن البيع والشراء بشكل كامل', 'د) المطالبة بالعودة لنظام المقايضة الزراعية'], correct: 1, explanation: "هذا تطبيق حي لقانون جريشم، حيث تعتبر العملة المتضخمة (نقود سيئة) يتم التخلص منها بشراء العملات الأجنبية القوية (النقود الجيدة)." },
+            { q: '18. في مثال التضخم، ما هي "النقود الجيدة" التي يلجأ الناس للاحتفاظ بها كغطاء آمن لثرواتهم هرباً من النقد المحلي المتناقص؟', options: ['أ) العملات الورقية المحلية التالفة', 'ب) النقد الأجنبي (العملات الأجنبية الجيدة)', 'ج) السلع الزراعية سريعة التلف', 'د) العملات المعدنية الرديئة'], correct: 1, explanation: "النقد الأجنبي المستقر يعتبر ملاذاً آمناً للثروة في أوقات التضخم وانخفاض قيمة العملة المحلية." },
+            { q: '19. زيادة طلب الأفراد على استخدام الذهب لأغراض الزينة والمجوهرات يؤدي بالضرورة إلى:', options: ['أ) زيادة كمية الذهب المتوفرة لتوفير الغطاء النقدي', 'ب) عدم التأثير إطلاقاً على الغطاء النقدي', 'ج) تناقص كمية الذهب المتوفرة لتوفير الغطاء التام لكمية النقد المُصدَر', 'د) ارتفاع قيمة العملة المحلية تلقائياً'], correct: 2, explanation: "استخدام الذهب لأغراض أخرى غير النقد يقلل من الكمية المتاحة كغطاء للعملة المحلية المصدرة." },
+            { q: '20. ما هي الأهداف الأساسية لدراسة مقرر "اقتصاديات النقود والبنوك" حسب مقدمة الملزمة؟', options: ['أ) دراسة الأسواق الزراعية فقط', 'ب) دراسة الرابط الوثيق بين النقود والبنوك والأسواق المالية وتأثيرها على التوازن الاقتصادي', 'ج) تعلم كيفية سك العملات المعدنية', 'د) التخلص من النظام المالي الحالي'], correct: 1, explanation: "يهدف المقرر إلى تعريف الطالب بنشأة وتطور النقود والسياسات النقدية ودورها في تحقيق التوازن الاقتصادي." }
+        ];
+
+        const happyReplies = ["عالللللمي! ⚽", "بالمقص! 🔥", "عاش الشويت! 🤩", "هدف خرافي! 🥅", "ولا يگدرلها الحارس! ✨"];
+        const speedReplies = ["صاروخية! 🚀", "شوتة عالطاير! ⚡", "سريع ومطير! 🌪️", "شوتة لا تصد ولا ترد! 💥"];
+        const sadReplies = ["بالعارضة! 🤦‍♂️", "صدها الحارس! 🧤", "شوتة ضعيفة! 🧐", "ضيعتها! 💔"];
+
+        let currentQ = 0; let score = 0; let streak = 0; let userAnswers = [];
+        let timeLeft = 25; let maxTime = 25; let timerInterval; 
+        let isFireball = false;
+        let hasYellowCard = false; // متغير لتتبع البطاقات
+
+        let highScore = localStorage.getItem('penaltyQuizPoints20') || 0;
+        document.getElementById('highscore-badge').innerText = `🏆 أعلى نقاط: ${highScore}`;
+
+        const gk = document.getElementById('gk');
+        const ball = document.getElementById('ball');
+        const goalText = document.getElementById('goal-text');
+        const bubble = document.getElementById('speech-bubble'); const streakBadge = document.getElementById('streak-badge');
+        const qText = document.getElementById('question-text'); const optsContainer = document.getElementById('options-container');
+        const expBox = document.getElementById('explanation-box'); const resTitle = document.getElementById('result-title');
+        const expText = document.getElementById('explanation-text'); const nextBtn = document.getElementById('next-btn');
+        const timerBar = document.getElementById('timer-bar'); const uiContainer = document.getElementById('ui-container');
+
+        function selectTeam(team) {
+            initAudio(); 
+            triggerVibration('click');
+            playSound('click');
+
+            let root = document.documentElement;
+            if (team === 'barca') {
+                root.style.setProperty('--team-color', '#004d98'); 
+                root.style.setProperty('--team-glow', 'rgba(165, 0, 68, 0.8)'); 
+                root.style.setProperty('--text-on-team', '#ffffff');
+                root.style.setProperty('--net-color', 'rgba(165, 0, 68, 0.5)'); 
+                root.style.setProperty('--goal-border', '#a50044'); 
+            } else if (team === 'real') {
+                root.style.setProperty('--team-color', '#ffffff'); 
+                root.style.setProperty('--team-glow', 'rgba(255, 255, 255, 0.7)');
+                root.style.setProperty('--text-on-team', '#000000'); 
+                root.style.setProperty('--net-color', 'rgba(255, 255, 255, 0.5)'); 
+                root.style.setProperty('--goal-border', '#ffffff'); 
+            } else if (team === 'liverpool') {
+                root.style.setProperty('--team-color', '#c8102E'); 
+                root.style.setProperty('--team-glow', 'rgba(200, 16, 46, 0.7)');
+                root.style.setProperty('--text-on-team', '#ffffff');
+                root.style.setProperty('--net-color', 'rgba(200, 16, 46, 0.6)'); 
+                root.style.setProperty('--goal-border', '#ffffff'); 
+            }
+            
+            document.getElementById('team-screen').style.display = 'none';
+            document.getElementById('quiz-content').style.display = 'block';
+            loadQ();
+        }
+
+        function startTimer() {
+            timeLeft = maxTime;
+            timerBar.style.width = '100%'; timerBar.classList.remove('timer-warning');
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--; timerBar.style.width = `${(timeLeft / maxTime) * 100}%`;
+                if (timeLeft === 5) { timerBar.classList.add('timer-warning'); }
+                if (timeLeft <= 0) { clearInterval(timerInterval); checkAns(-1, null); }
+            }, 1000);
+        }
+
+        function loadQ() {
+            if (currentQ >= quizData.length) return;
+            
+            document.body.classList.remove('shake-screen');
+            void document.body.offsetWidth; 
+
+            if (streak >= 2) {
+                ball.className = 'ball fireball';
+                isFireball = true;
+            } else {
+                ball.className = 'ball';
+                isFireball = false;
+            }
+            
+            gk.className = 'goalkeeper'; goalText.classList.remove('show');
+
+            const current = quizData[currentQ];
+            document.getElementById('q-counter').innerText = `الضربة ${currentQ + 1} من ${quizData.length}`;
+            qText.innerText = current.q; 
+            
+            optsContainer.innerHTML = '';
+            expBox.style.display = 'none'; bubble.style.display = 'none'; bubble.style.opacity = '0';
+            
+            let btnText = (currentQ === quizData.length - 1) ? "صافرة النهاية 🏁" : "الضربة القادمة ⚽";
+            if (isFireball) btnText += " (النقاط x2 🔥)";
+            nextBtn.innerText = btnText;
+
+            current.options.forEach((opt, idx) => {
+                let btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = opt;
+                btn.onclick = () => { 
+                    triggerVibration('click');
+                    playSound('click');
+                    checkAns(idx, btn); 
+                };
+                optsContainer.appendChild(btn);
+            });
+            startTimer(); uiContainer.scrollTop = 0;
+        }
+
+        function checkAns(idx, btn) {
+            clearInterval(timerInterval);
+            
+            const timeTaken = maxTime - timeLeft; 
+            const isSpeedKick = (timeTaken <= 5 && idx !== -1); 
+
+            const current = quizData[currentQ]; const btns = optsContainer.querySelectorAll('button');
+            const isCorrect = (idx === current.correct); const isTimeout = (idx === -1);
+            
+            let pointsGained = 0;
+            let penaltyPoints = 0;
+
+            if (isCorrect) {
+                pointsGained = 1; 
+                if (isFireball) pointsGained += 1; 
+                if (isSpeedKick) pointsGained += 1; 
+                score += pointsGained;
+            } else if (isTimeout) {
+                // نظام البطاقات
+                if (!hasYellowCard) {
+                    hasYellowCard = true; // انطرد باجر
+                    showRefCard('yellow');
+                    triggerVibration('wrong');
+                } else {
+                    hasYellowCard = false; // تصفير حتى يرجع يحسب من جديد
+                    showRefCard('red');
+                    triggerVibration('redcard');
+                    penaltyPoints = 2;
+                    score -= penaltyPoints;
+                    if (score < 0) score = 0; // حتى ما يصير الرصيد بالسالب
+                    setTimeout(() => document.body.classList.add('shake-screen'), 200); // الشاشة تهتز للطرد
+                }
+            }
+
+            userAnswers.push({
+                question: current.q, 
+                userPicked: isTimeout ? "انتهى الوقت" : current.options[idx],
+                correctAnswer: current.options[current.correct], 
+                isCorrect: isCorrect, 
+                explanation: current.explanation,
+                points: isCorrect ? pointsGained : (penaltyPoints > 0 ? -penaltyPoints : 0)
+            });
+            
+            btns.forEach(b => b.disabled = true);
+            btns[current.correct].style.background = 'rgba(0, 255, 150, 0.4)'; btns[current.correct].style.borderColor = '#00ff9d';
+
+            bubble.style.display = 'block'; setTimeout(() => bubble.style.opacity = '1', 10);
+
+            if (isCorrect) {
+                triggerVibration('correct');
+                playSound('correct');
+
+                let side = Math.random() > 0.5 ? 'kick-goal-left' : 'kick-goal-right';
+                ball.classList.add(side);
+                gk.classList.add(side === 'kick-goal-left' ? 'gk-dive-right' : 'gk-dive-left'); 
+                setTimeout(() => goalText.classList.add('show'), 300);
+
+                if (isSpeedKick) {
+                    resTitle.innerText = `✅ شوتة عالطاير! (+${pointsGained})`;
+                    resTitle.style.color = "#00ffff"; 
+                    bubble.innerText = speedReplies[Math.floor(Math.random() * speedReplies.length)];
+                } else if (isFireball) {
+                    resTitle.innerText = `✅ هدف ناري! (+${pointsGained})`;
+                    resTitle.style.color = "#ff8c00";
+                    bubble.innerText = "احترقت الشباك! 🔥";
+                } else {
+                    resTitle.innerText = `✅ إجابة صحيحة (+${pointsGained})`;
+                    resTitle.style.color = "#00ff9d";
+                    bubble.innerText = happyReplies[Math.floor(Math.random() * happyReplies.length)];
+                }
+                
+                bubble.style.color = "#059669";
+                streak++; 
+                if (streak >= 2) { streakBadge.style.display = 'block'; }
+            } else {
+                streak = 0; streakBadge.style.display = 'none';
+                ball.classList.add('kick-miss');
+                gk.classList.add('gk-save');
+
+                if (isTimeout) { 
+                    if (penaltyPoints > 0) {
+                        resTitle.innerText = "🟥 كارت أحمر! (-2 نقطة)";
+                        resTitle.style.color = "#ff3232";
+                        bubble.innerText = "انطردت بسبب تضييع الوقت! 🟥";
+                        bubble.style.color = "#cc0000";
+                    } else {
+                        resTitle.innerText = "🟨 كارت أصفر!";
+                        resTitle.style.color = "#ffd700";
+                        bubble.innerText = "تأخرت! الحكم انطاك إنذار 🟨";
+                        bubble.style.color = "#b8860b";
+                    }
+                } else { 
+                    // تأثير العارضة (نسبة 50% تضرب بالعارضة)
+                    let isCrossbar = Math.random() >= 0.5;
+                    if (isCrossbar) {
+                        triggerVibration('crossbar');
+                        playSound('crossbar');
+                        ball.className = 'ball fireball kick-crossbar'; // استخدمت كلاس الفايربول حتى يحافظ عالتصميم ويضيف انيميشن العارضة
+                        setTimeout(() => document.body.classList.add('shake-screen'), 300); 
+                        bubble.innerText = "بالعاااارضة! قهر 💔";
+                    } else {
+                        triggerVibration('wrong');
+                        playSound('wrong');
+                        bubble.innerText = sadReplies[Math.floor(Math.random() * sadReplies.length)];
+                    }
+                    resTitle.innerText = "❌ إجابة خاطئة!"; 
+                    resTitle.style.color = "#ff3232"; 
+                    bubble.style.color = "#dc2626";
+                    btn.style.background = 'rgba(255, 50, 50, 0.4)'; 
+                    btn.style.borderColor = '#ff3232'; 
+                }
+            }
+
+            expText.innerText = current.explanation; expBox.style.display = 'block';
+            setTimeout(() => { uiContainer.scrollTo({ top: uiContainer.scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+
+        function moveToNext() {
+            triggerVibration('click');
+            playSound('click');
+            currentQ++;
+            if(currentQ < quizData.length) { loadQ(); } 
+            else { showCompletion(); }
+        }
+
+        function shootConfetti() {
+            const colors = ['#00ff9d', '#00aaff', '#ffd700', '#ffffff'];
+            for (let i = 0; i < 80; i++) {
+                let conf = document.createElement('div'); conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw'; conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's'; conf.style.top = '-' + (Math.random() * 20 + 10) + 'px';
+                document.body.appendChild(conf); setTimeout(() => conf.remove(), 4000);
+            }
+        }
+
+        function showCompletion() {
+            document.getElementById('quiz-content').style.display = 'none'; bubble.style.display = 'none'; streakBadge.style.display = 'none'; 
+            
+            if (score > highScore) { highScore = score; localStorage.setItem('penaltyQuizPoints20', highScore); document.getElementById('highscore-badge').innerText = `🏆 أعلى نقاط: ${highScore}`; }
+
+            const praiseText = document.getElementById('final-praise'); const descText = document.getElementById('final-desc');
+            const finalScoreObj = document.getElementById('final-score'); const trophy = document.getElementById('final-trophy');
+
+            if (score >= 25) {
+                praiseText.innerText = "أسطورة الملاعب! 🏆"; praiseText.style.color = "#00ff9d"; finalScoreObj.style.color = "#00ff9d";
+                descText.innerText = "ختمت المادة لعب! جبت نقاط خرافية واستغليت الشوتات عالطاير!"; 
+                trophy.innerText = "🥇"; shootConfetti(); playSound('correct');
+            } else if (score >= 15) {
+                praiseText.innerText = "بطل ومعدل! 👍"; praiseText.style.color = "#ffd700"; finalScoreObj.style.color = "#ffd700";
+                descText.innerText = "أدائك حلو ومعلوماتك قوية، بس تكدر تجيب نقاط أكثر بالسرعة!"; 
+                trophy.innerText = "🥈"; shootConfetti(); playSound('correct');
+            } else {
+                praiseText.innerText = "يرادلك دراسة أكثر! 💔"; praiseText.style.color = "#ff3232"; finalScoreObj.style.color = "#ff3232";
+                descText.innerText = "العارضة والحارس تعبوك اليوم.. اقرأ المادة زين وارجع شوت!"; 
+                trophy.innerText = "🧤"; playSound('wrong');
+            }
+
+            document.getElementById('final-score').innerText = `إجمالي النقاط: ${score}`; 
+            document.getElementById('completion-screen').style.display = 'block'; uiContainer.scrollTop = 0;
+        }
+
+        function showReview() {
+            triggerVibration('click'); playSound('click');
+            document.getElementById('completion-screen').style.display = 'none';
+            const reviewList = document.getElementById('review-list'); reviewList.innerHTML = ''; 
+
+            userAnswers.forEach((ans, index) => {
+                let div = document.createElement('div'); div.className = 'review-item';
+                let ptsText = ans.points > 0 ? `+${ans.points}` : (ans.points < 0 ? ans.points : '0');
+                let userStatus = ans.isCorrect ? `<span class="ans-correct">✅ ${ans.userPicked} (${ptsText})</span>` : `<span class="ans-wrong">❌ ${ans.userPicked} (${ptsText})</span> <br> (الصحيح: ${ans.correctAnswer})`;
+                div.innerHTML = `<div class="review-q">س${index + 1}: ${ans.question}</div><div class="review-ans">إجابتك: ${userStatus}</div><div class="review-exp">💡 <b>توضيح:</b> ${ans.explanation}</div>`;
+                reviewList.appendChild(div);
+            });
+            document.getElementById('review-screen').style.display = 'block'; uiContainer.scrollTop = 0;
+        }
+
+        streakBadge.style.display = 'none';
+    </script>
+</body>
+</html>
